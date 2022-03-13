@@ -93,17 +93,17 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
 		return err
 	}
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', ScoreTotal BIGINT NOT NULL DEFAULT 0, ScoreAverage BIGINT NOT NULL DEFAULT 0, ScoreVoters BIGINT NOT NULL DEFAULT 0, Location VARCHAR(255) UNIQUE NOT NULL, Source VARCHAR(2000) NOT NULL DEFAULT '', UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Description TEXT NOT NULL DEFAULT '', INDEX(UploaderID), INDEX(Rating), INDEX(UploadTime), INDEX(ScoreAverage));")
+	if err != nil {
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
+		return err
+	}
 	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageTagPair (TagID,ImageID), INDEX(ImageID), INDEX(LinkerID), CONSTRAINT fk_ImageTagsImageID FOREIGN KEY (ImageID) REFERENCES Images(ID), CONSTRAINT fk_ImageTagsTagID FOREIGN KEY (TagID) REFERENCES Tags(ID));")
 	if err != nil {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
 		return err
 	}
 	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImagedHashes (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, vHash BIGINT UNSIGNED NOT NULL, hHash BIGINT UNSIGNED NOT NULL, UNIQUE INDEX(ImageID), INDEX(vHash), INDEX(hHash), CONSTRAINT fk_ImagedHashesImageID FOREIGN KEY (ImageID) REFERENCES Images(ID));")
-	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
-		return err
-	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', ScoreTotal BIGINT NOT NULL DEFAULT 0, ScoreAverage BIGINT NOT NULL DEFAULT 0, ScoreVoters BIGINT NOT NULL DEFAULT 0, Location VARCHAR(255) UNIQUE NOT NULL, Source VARCHAR(2000) NOT NULL DEFAULT '', UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Description TEXT NOT NULL DEFAULT '', INDEX(UploaderID), INDEX(Rating), INDEX(UploadTime), INDEX(ScoreAverage));")
 	if err != nil {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
 		return err
@@ -159,8 +159,8 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 	WHERE CollectionMembers.CollectionID = collID AND CollectionTags.CollectionID IS NULL;
 	-- Remove extra tags
 	DELETE FROM CollectionTags
-	WHERE TagID NOT IN ( SELECT TagID 
-							FROM ImageTags 
+	WHERE TagID NOT IN ( SELECT TagID
+							FROM ImageTags
 							INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
 							WHERE CollectionMembers.CollectionID = collID
 						)
@@ -195,8 +195,8 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 	BEGIN
 		-- Remove extra tags
 		DELETE FROM CollectionTags
-		WHERE TagID NOT IN ( SELECT TagID 
-								FROM ImageTags 
+		WHERE TagID NOT IN ( SELECT TagID
+								FROM ImageTags
 								INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
 								WHERE CollectionMembers.CollectionID = collID
 							)
@@ -207,9 +207,9 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		return err
 	}
 
-	sqlQuery = `CREATE EVENT auditCleanup 
-	ON SCHEDULE EVERY 1 DAY 
-	DO 
+	sqlQuery = `CREATE EVENT auditCleanup
+	ON SCHEDULE EVERY 1 DAY
+	DO
 	DELETE FROM AuditLogs WHERE LogTime < DATE_SUB(current_timestamp(), INTERVAL 30 DAY);`
 	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
@@ -429,8 +429,8 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 		AND TagID NOT IN (SELECT TagID from CollectionTags WHERE CollectionID = collID);
 		-- Remove extra tags
 		DELETE FROM CollectionTags
-		WHERE TagID NOT IN ( SELECT TagID 
-							 FROM ImageTags 
+		WHERE TagID NOT IN ( SELECT TagID
+							 FROM ImageTags
 							 INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
 							 WHERE CollectionMembers.CollectionID = collID
 						   )
@@ -441,9 +441,9 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/InitDatabase", "0", logging.ResultFailure, []string{"Failed to update database version", err.Error()})
 			return version, err
 		}
-		sqlQuery = `CREATE EVENT auditCleanup 
-		ON SCHEDULE EVERY 1 DAY 
-		DO 
+		sqlQuery = `CREATE EVENT auditCleanup
+		ON SCHEDULE EVERY 1 DAY
+		DO
 		DELETE FROM AuditLogs WHERE LogTime < DATE_SUB(current_timestamp(), INTERVAL 30 DAY);`
 		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
 			logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/InitDatabase", "0", logging.ResultFailure, []string{"Failed to update database version", err.Error()})
@@ -563,8 +563,8 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 		WHERE CollectionMembers.CollectionID = collID AND CollectionTags.CollectionID IS NULL;
 		-- Remove extra tags
 		DELETE FROM CollectionTags
-		WHERE TagID NOT IN ( SELECT TagID 
-								FROM ImageTags 
+		WHERE TagID NOT IN ( SELECT TagID
+								FROM ImageTags
 								INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
 								WHERE CollectionMembers.CollectionID = collID
 							)
@@ -638,8 +638,8 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 		BEGIN
 			-- Remove extra tags
 			DELETE FROM CollectionTags
-			WHERE TagID NOT IN ( SELECT TagID 
-									FROM ImageTags 
+			WHERE TagID NOT IN ( SELECT TagID
+									FROM ImageTags
 									INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
 									WHERE CollectionMembers.CollectionID = collID
 								)
