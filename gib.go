@@ -33,6 +33,10 @@ func main() {
 	missingOnly := flag.Bool("missingonly", false, "When used with dhashonly or thumbsonly, prevents deleting pre-existing entries.")
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	removeOrphanFiles := flag.Bool("removeorphanfiles", false, "Removes images and thumbnails that do not have an associated database entry.")
+	newUsername := flag.String("username", "", "Add new user with given username")
+	newEmail := flag.String("email", "", "Add new user with given email")
+	newPassword := flag.String("password", "", "Add new user with given password")
+	newPermits := flag.Int("permits", -1, "Add new user with given permits")
 	flag.Parse()
 
 	//Load succeeded
@@ -138,6 +142,34 @@ func main() {
 		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Successfully connected to database"})
 		configConfirmed = true
 	}
+
+	if *newUsername != "" || *newEmail != "" || *newPassword != "" || *newPermits >= 0 {
+		if *newUsername == "" {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new username"})
+			return
+		}
+		if *newEmail == "" {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new user email"})
+			return
+		}
+		if *newPassword == "" {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new user password"})
+			return
+		}
+		if *newPermits < 0 {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new user permissions"})
+			return
+		}
+
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Adding new user: ", *newUsername, *newEmail})
+
+		err := database.DBInterface.CreateUser(*newUsername, []byte(*newPassword), *newEmail, uint64(*newPermits))
+		if err != nil {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"error creating new user: ", err.Error()})
+		}
+		return
+	}
+
 	if *generatedHashesOnly {
 		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Generate dHashes flag detected. Server will not start and instead just generate dHashes. This will take some time."})
 		//We need wait group so that we don't end the application before goroutines
