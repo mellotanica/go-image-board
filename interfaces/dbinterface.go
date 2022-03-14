@@ -7,8 +7,8 @@ type DBInterface interface {
 	CreateUser(userName string, password []byte, email string, permissions uint64) error
 	//ValidateUser Validate a user's password (return nil if valid)
 	ValidateUser(userName string, password []byte) error
-	//SetUserPassword Update a user's password, validation of user provided by either old password, or security answers. (nil on success)
-	SetUserPassword(userName string, password []byte, newPassword []byte, answerOne []byte, answerTwo []byte, answerThree []byte) error
+	//SetUserPassword Update a user's password, validation of user provided by either old password, or security answers, force flag skips validation, for root use only. (nil on success)
+	SetUserPassword(userName string, password []byte, newPassword []byte, answerOne []byte, answerTwo []byte, answerThree []byte, force bool) error
 	//ValidateToken Validate a cookie token (true if valid cookie, false otherwise, error for reason or nil)
 	ValidateToken(userName string, tokenID string, ip string) error
 	//GenerateToken Generate a cookie token (string token, or error)

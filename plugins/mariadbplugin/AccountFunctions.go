@@ -103,16 +103,18 @@ func (DBConnection *MariaDBPlugin) SetUserQueryTags(UserID uint64, Filter string
 }
 
 //SetUserPassword Update a user's password, validation of user provided by either old password, or security answers. (nil on success)
-func (DBConnection *MariaDBPlugin) SetUserPassword(userName string, password []byte, newPassword []byte, answerOne []byte, answerTwo []byte, answerThree []byte) error {
-	//Validate authentication method
-	if password == nil {
-		if err := DBConnection.ValidateSecurityQuestions(userName, answerOne, answerTwo, answerThree); err != nil {
-			//Need to use security question method
+func (DBConnection *MariaDBPlugin) SetUserPassword(userName string, password []byte, newPassword []byte, answerOne []byte, answerTwo []byte, answerThree []byte, force bool) error {
+	if !force {
+		//Validate authentication method
+		if password == nil {
+			if err := DBConnection.ValidateSecurityQuestions(userName, answerOne, answerTwo, answerThree); err != nil {
+				//Need to use security question method
+				return err
+			}
+		} else if err := DBConnection.ValidateUser(userName, password); err != nil {
+			//Otherwise, utilize classic password
 			return err
 		}
-	} else if err := DBConnection.ValidateUser(userName, password); err != nil {
-		//Otherwise, utilize classic password
-		return err
 	}
 
 	//At this point, we have passed the authentication (either security question or old password) now we need to change the password
