@@ -13,6 +13,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/satori/go.uuid v1.2.0
+	github.com/sethvargo/go-password v0.2.0
 	go-image-board v0.0.0-00010101000000-000000000000
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
 	golang.org/x/image v0.0.0-20220302094943-723b81ca9867
@@ -20,6 +21,6 @@ require (
 
 require (
 	github.com/disintegration/gift v1.1.2 // indirect
-	github.com/kr/pretty v0.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )

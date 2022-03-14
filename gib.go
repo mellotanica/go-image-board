@@ -24,6 +24,7 @@ import (
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
+	pwgen "github.com/sethvargo/go-password/password"
 )
 
 func main() {
@@ -33,10 +34,13 @@ func main() {
 	missingOnly := flag.Bool("missingonly", false, "When used with dhashonly or thumbsonly, prevents deleting pre-existing entries.")
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	removeOrphanFiles := flag.Bool("removeorphanfiles", false, "Removes images and thumbnails that do not have an associated database entry.")
-	newUsername := flag.String("username", "", "Add new user with given username")
-	newEmail := flag.String("email", "", "Add new user with given email")
-	newPassword := flag.String("password", "", "Add new user with given password")
-	newPermits := flag.Int("permits", -1, "Add new user with given permits")
+	username := flag.String("username", "", "username for user edits (add/change password)")
+	email := flag.String("email", "", "email for user insertion")
+	password := flag.String("password", "", "password for user edits (add/change password)")
+	permits := flag.Int("permissions", 32575, "permissions for user insertion")
+	addUser := flag.Bool("adduser", false, "Add new user")
+	changePassword := flag.Bool("changepassword", false, "Modify user password")
+	removeUser := flag.Bool("removeuser", false, "Remove existing user")
 	flag.Parse()
 
 	//Load succeeded
@@ -143,29 +147,60 @@ func main() {
 		configConfirmed = true
 	}
 
-	if *newUsername != "" || *newEmail != "" || *newPassword != "" || *newPermits >= 0 {
-		if *newUsername == "" {
-			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new username"})
+	if *addUser {
+		if *username == "" {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"Missing new username"})
 			return
 		}
-		if *newEmail == "" {
-			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new user email"})
+		if *email == "" {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"Missing new user email"})
 			return
 		}
-		if *newPassword == "" {
-			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new user password"})
-			return
+		if *password == "" {
+			*password = pwgen.MustGenerate(16, 6, 0, false, false)
+			logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Generated new password '" + *password + "'"})
 		}
-		if *newPermits < 0 {
-			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Missing new user permissions"})
+		if *permits < 0 {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"Invalid new user permissions"})
 			return
 		}
 
-		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Adding new user: ", *newUsername, *newEmail})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Adding new user: ", *username, *email})
 
-		err := database.DBInterface.CreateUser(*newUsername, []byte(*newPassword), *newEmail, uint64(*newPermits))
+		err := database.DBInterface.CreateUser(*username, []byte(*password), *email, uint64(*permits))
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"error creating new user: ", err.Error()})
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"error creating new user: ", err.Error()})
+		}
+		return
+	}
+
+	if *removeUser {
+		if *username == "" {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"Missing new username"})
+			return
+		}
+
+		err := database.DBInterface.RemoveUser(*username)
+		if err != nil {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"error removing user: ", err.Error()})
+		}
+		return
+	}
+
+	if *changePassword {
+		if *username == "" {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"Missing new username"})
+			return
+		}
+
+		if *password == "" {
+			*password = pwgen.MustGenerate(16, 6, 0, false, false)
+			logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Generated new password '" + *password + "'"})
+		}
+
+		err := database.DBInterface.SetUserPassword(*username, nil, []byte(*password), nil, nil, nil, true)
+		if err != nil {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "0", logging.ResultInfo, []string{"error changing user password: ", err.Error()})
 		}
 		return
 	}
