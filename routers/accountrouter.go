@@ -241,7 +241,7 @@ func LogonPostRouter(responseWriter http.ResponseWriter, request *http.Request) 
 		}
 
 		//Call change pw
-		err = database.DBInterface.SetUserPassword(userName, nil, []byte(request.FormValue("newpassword")), []byte(answerOne), []byte(answerTwo), []byte(answerThree))
+		err = database.DBInterface.SetUserPassword(userName, nil, []byte(request.FormValue("newpassword")), []byte(answerOne), []byte(answerTwo), []byte(answerThree), false)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Failed to change password.<br>")
 			go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password. "+err.Error())
@@ -274,10 +274,10 @@ func LogonPostRouter(responseWriter http.ResponseWriter, request *http.Request) 
 			}
 		}
 
-		err := database.DBInterface.SetUserPassword(username, []byte(request.FormValue("oldpassword")), []byte(request.FormValue("newpassword")), nil, nil, nil)
+		err := database.DBInterface.SetUserPassword(username, []byte(request.FormValue("oldpassword")), []byte(request.FormValue("newpassword")), nil, nil, nil, false)
 		if err != nil {
 			go WriteAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
-			TemplateInput.HTMLMessage += template.HTML("Failed to update password.<br>")
+			TemplateInput.HTMLMessage += template.HTML("Failed to update password: " + err.Error() + ".<br>")
 			redirectWithFlash(responseWriter, request, "/logon", TemplateInput.HTMLMessage, "PasswordFailed")
 			return
 		}
